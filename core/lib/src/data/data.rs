@@ -247,7 +247,7 @@ impl Data {
                 n < PEEK_BYTES
             }
             Err(e) => {
-                error_!("Failed to read into peek buffer: {:?}.", e);
+                warn!("Failed to read into peek buffer: {:?}.", e);
                 // Likewise here as above.
                 peek_buf.truncate(0);
                 false

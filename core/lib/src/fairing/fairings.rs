@@ -1,8 +1,6 @@
 use {Rocket, Request, Response, Data};
 use fairing::{Fairing, Kind};
 
-use yansi::Paint;
-
 #[derive(Default)]
 pub struct Fairings {
     all_fairings: Vec<Box<Fairing>>,
@@ -87,13 +85,13 @@ impl Fairings {
                 .collect::<Vec<_>>()
                 .join(", ");
 
-            info_!("{} {}: {}", Paint::default(num).bold(), kind, Paint::default(names).bold());
+            info_!("{} {}: {}", num, kind, names);
         }
     }
 
     pub fn pretty_print_counts(&self) {
         if !self.all_fairings.is_empty() {
-            info!("{}{}:", Paint::masked("📡 "), Paint::magenta("Fairings"));
+            info!("Fairings:");
             self.info_for("launch", &self.launch);
             self.info_for("request", &self.request);
             self.info_for("response", &self.response);

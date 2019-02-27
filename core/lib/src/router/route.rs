@@ -1,8 +1,6 @@
 use std::fmt::{self, Display};
 use std::convert::From;
 
-use yansi::Paint;
-
 use codegen::StaticRouteInfo;
 use handler::Handler;
 use http::{Method, MediaType};
@@ -282,19 +280,18 @@ impl Route {
 
 impl fmt::Display for Route {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}", Paint::green(&self.method), Paint::blue(&self.uri))?;
+        write!(f, "{} {}", &self.method, &self.uri)?;
 
         if self.rank > 1 {
-            write!(f, " [{}]", Paint::default(&self.rank).bold())?;
+            write!(f, " [{}]", &self.rank)?;
         }
 
         if let Some(ref format) = self.format {
-            write!(f, " {}", Paint::yellow(format))?;
+            write!(f, " {}", format)?;
         }
 
         if let Some(name) = self.name {
-            write!(f, " {}{}{}",
-                   Paint::cyan("("), Paint::magenta(name), Paint::cyan(")"))?;
+            write!(f, " ({})", name)?;
         }
 
         Ok(())

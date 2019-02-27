@@ -4,7 +4,6 @@ use std::net::{IpAddr, SocketAddr};
 use std::fmt;
 use std::str;
 
-use yansi::Paint;
 use state::{Container, Storage};
 
 use request::{FromParam, FromSegments, FromRequest, Outcome};
@@ -292,7 +291,7 @@ impl<'r> Request<'r> {
         match self.state.cookies.try_borrow_mut() {
             Ok(jar) => Cookies::new(jar, self.state.config.secret_key()),
             Err(_) => {
-                error_!("Multiple `Cookies` instances are active at once.");
+                warn!("Multiple `Cookies` instances are active at once.");
                 info_!("An instance of `Cookies` must be dropped before another \
                        can be retrieved.");
                 warn_!("The retrieved `Cookies` instance will be empty.");
@@ -857,12 +856,12 @@ impl<'r> fmt::Display for Request<'r> {
     /// Pretty prints a Request. This is primarily used by Rocket's logging
     /// infrastructure.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}", Paint::green(self.method()), Paint::blue(&self.uri))?;
+        write!(f, "{} {}", self.method(), &self.uri)?;
 
         // Print the requests media type when the route specifies a format.
         if let Some(media_type) = self.format() {
             if !media_type.is_any() {
-                write!(f, " {}", Paint::yellow(media_type))?;
+                write!(f, " {}", media_type)?;
             }
         }
 

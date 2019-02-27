@@ -83,7 +83,7 @@ fn run_db_migrations(rocket: Rocket) -> Result<Rocket, Rocket> {
     match embedded_migrations::run(&*conn) {
         Ok(()) => Ok(rocket),
         Err(e) => {
-            error!("Failed to run database migrations: {:?}", e);
+            warn!("Failed to run database migrations: {:?}", e);
             Err(rocket)
         }
     }

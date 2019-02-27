@@ -5,7 +5,6 @@ use std::io::{self, Write};
 use std::time::Duration;
 use std::mem;
 
-use yansi::Paint;
 use state::Container;
 
 #[cfg(feature = "tls")] use http::tls::TlsServer;
@@ -57,7 +56,7 @@ impl hyper::Handler for Rocket {
         let mut req = match req_res {
             Ok(req) => req,
             Err(e) => {
-                error!("Bad incoming request: {}", e);
+                warn!("Bad incoming request: {}", e);
                 // TODO: We don't have a request to pass in, so we just
                 // fabricate one. This is weird. We should let the user know
                 // that we failed to parse a request (by invoking some special
@@ -72,7 +71,7 @@ impl hyper::Handler for Rocket {
         let data = match Data::from_hyp(h_body) {
             Ok(data) => data,
             Err(reason) => {
-                error_!("Bad data in request: {}", reason);
+                warn!("Bad data in request: {}", reason);
                 let r = self.handle_error(Status::InternalServerError, &req);
                 return self.issue_response(r, res);
             }
@@ -117,8 +116,8 @@ impl Rocket {
     #[inline]
     fn issue_response(&self, response: Response, hyp_res: hyper::FreshResponse) {
         match self.write_response(response, hyp_res) {
-            Ok(_) => info_!("{}", Paint::green("Response succeeded.")),
-            Err(e) => error_!("Failed to write response: {:?}.", e),
+            Ok(_) => info_!("Response succeeded."),
+            Err(e) => warn!("Failed to write response: {:?}.", e),
         }
     }
 
@@ -247,7 +246,7 @@ impl Rocket {
             Outcome::Forward(data) => {
                 // There was no matching route. Autohandle `HEAD` requests.
                 if request.method() == Method::Head {
-                    info_!("Autohandling {} request.", Paint::default("HEAD").bold());
+                    info_!("Autohandling HEAD request.");
 
                     // Dispatch the request again with Method `GET`.
                     request._set_method(Method::Get);
@@ -290,14 +289,14 @@ impl Rocket {
 
             // Check if the request processing completed or if the request needs
             // to be forwarded. If it does, continue the loop to try again.
-            info_!("{} {}", Paint::default("Outcome:").bold(), outcome);
+            info_!("Outcome: {}", outcome);
             match outcome {
                 o@Outcome::Success(_) | o@Outcome::Failure(_) => return o,
                 Outcome::Forward(unused_data) => data = unused_data,
             };
         }
 
-        error_!("No matching routes for {}.", request);
+        warn!("No matching routes for {}.", request);
         Outcome::Forward(data)
     }
 
@@ -311,17 +310,17 @@ impl Rocket {
         status: Status,
         req: &'r Request
     ) -> Response<'r> {
-        warn_!("Responding with {} catcher.", Paint::red(&status));
+        warn_!("Responding with {} catcher.", &status);
 
         // Try to get the active catcher but fallback to user's 500 catcher.
         let catcher = self.catchers.get(&status.code).unwrap_or_else(|| {
-            error_!("No catcher found for {}. Using 500 catcher.", status);
+            warn!("No catcher found for {}. Using 500 catcher.", status);
             self.catchers.get(&500).expect("500 catcher.")
         });
 
         // Dispatch to the user's catcher. If it fails, use the default 500.
         catcher.handle(req).unwrap_or_else(|err_status| {
-            error_!("Catcher failed with status: {}!", err_status);
+            warn!("Catcher failed with status: {}!", err_status);
             warn_!("Using default 500 error catcher.");
             let default = self.default_catchers.get(&500).expect("Default 500");
             default.handle(req).expect("Default 500 response.")
@@ -390,27 +389,27 @@ impl Rocket {
             logger::push_max_level(logger::LoggingLevel::Normal);
         }
 
-        launch_info!("{}Configured for {}.", Paint::masked("🔧 "), config.environment);
-        launch_info_!("address: {}", Paint::default(&config.address).bold());
-        launch_info_!("port: {}", Paint::default(&config.port).bold());
-        launch_info_!("log: {}", Paint::default(config.log_level).bold());
-        launch_info_!("workers: {}", Paint::default(config.workers).bold());
-        launch_info_!("secret key: {}", Paint::default(&config.secret_key).bold());
-        launch_info_!("limits: {}", Paint::default(&config.limits).bold());
+        launch_info!("Configured for {}.", config.environment);
+        launch_info_!("address: {}", &config.address);
+        launch_info_!("port: {}", &config.port);
+        launch_info_!("log: {}", config.log_level);
+        launch_info_!("workers: {}", config.workers);
+        launch_info_!("secret key: {}", &config.secret_key);
+        launch_info_!("limits: {}", &config.limits);
 
         match config.keep_alive {
-            Some(v) => launch_info_!("keep-alive: {}", Paint::default(format!("{}s", v)).bold()),
-            None => launch_info_!("keep-alive: {}", Paint::default("disabled").bold()),
+            Some(v) => launch_info_!("keep-alive: {}", format!("{}s", v)),
+            None => launch_info_!("keep-alive: {}", "disabled"),
         }
 
         let tls_configured = config.tls.is_some();
         if tls_configured && cfg!(feature = "tls") {
-            launch_info_!("tls: {}", Paint::default("enabled").bold());
+            launch_info_!("tls: {}", "enabled");
         } else if tls_configured {
-            error_!("tls: {}", Paint::default("disabled").bold());
-            error_!("tls is configured, but the tls feature is disabled");
+            warn!("tls: {}", "disabled");
+            warn!("tls is configured, but the tls feature is disabled");
         } else {
-            launch_info_!("tls: {}", Paint::default("disabled").bold());
+            launch_info_!("tls: {}", "disabled");
         }
 
         if config.secret_key.is_generated() && config.environment.is_prod() {
@@ -418,9 +417,7 @@ impl Rocket {
         }
 
         for (name, value) in config.extras() {
-            launch_info_!("{} {}: {}",
-                          Paint::yellow("[extra]"), name,
-                          Paint::default(LoggedValue(value)).bold());
+            launch_info_!("[extra] {}: {}", name, LoggedValue(value));
         }
 
         Rocket {
@@ -489,27 +486,23 @@ impl Rocket {
     /// ```
     #[inline]
     pub fn mount<R: Into<Vec<Route>>>(mut self, base: &str, routes: R) -> Self {
-        info!("{}{} {}{}",
-              Paint::masked("🛰  "),
-              Paint::magenta("Mounting"),
-              Paint::blue(base),
-              Paint::magenta(":"));
+        info!("Mounting {}:", base);
 
         let base_uri = Origin::parse(base)
             .unwrap_or_else(|e| {
-                error_!("Invalid origin URI '{}' used as mount point.", base);
+                warn!("Invalid origin URI '{}' used as mount point.", base);
                 panic!("Error: {}", e);
             });
 
         if base_uri.query().is_some() {
-            error_!("Mount point '{}' contains query string.", base);
+            warn!("Mount point '{}' contains query string.", base);
             panic!("Invalid mount point.");
         }
 
         for mut route in routes.into() {
             let path = route.uri.clone();
             if let Err(e) = route.set_uri(base_uri.clone(), path) {
-                error_!("{}", e);
+                warn!("{}", e);
                 panic!("Invalid route URI.");
             }
 
@@ -549,10 +542,10 @@ impl Rocket {
     /// ```
     #[inline]
     pub fn register(mut self, catchers: Vec<Catcher>) -> Self {
-        info!("{}{}", Paint::masked("👾 "), Paint::magenta("Catchers:"));
+        info!("Catchers:");
         for c in catchers {
             if self.catchers.get(&c.code).map_or(false, |e| !e.is_default) {
-                info_!("{} {}", c, Paint::yellow("(warning: duplicate catcher!)"));
+                info_!("{} (warning: duplicate catcher!)", c);
             } else {
                 info_!("{}", c);
             }
@@ -603,7 +596,7 @@ impl Rocket {
     #[inline]
     pub fn manage<T: Send + Sync + 'static>(self, state: T) -> Self {
         if !self.state.set::<T>(state) {
-            error!("State for this type is already being managed!");
+            warn!("State for this type is already being managed!");
             panic!("Aborting due to duplicately managed state.");
         }
 
@@ -707,11 +700,7 @@ impl Rocket {
             self.fairings.handle_launch(&self);
 
             let full_addr = format!("{}:{}", self.config.address, self.config.port);
-            launch_info!("{}{} {}{}",
-                         Paint::masked("🚀 "),
-                         Paint::default("Rocket has launched from").bold(),
-                         Paint::default(proto).bold().underline(),
-                         Paint::default(&full_addr).bold().underline());
+            launch_info!("Rocket has launched from {}{}", proto, &full_addr);
 
             // Restore the log level back to what it originally was.
             logger::pop_max_level();

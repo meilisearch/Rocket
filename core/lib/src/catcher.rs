@@ -4,7 +4,6 @@ use codegen::StaticCatchInfo;
 use request::Request;
 
 use std::fmt;
-use yansi::Color::*;
 
 /// An error catching route.
 ///
@@ -117,7 +116,7 @@ impl<'a> From<&'a StaticCatchInfo> for Catcher {
 
 impl fmt::Display for Catcher {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", Blue.paint(&self.code))
+        write!(f, "{}", &self.code)
     }
 }
 

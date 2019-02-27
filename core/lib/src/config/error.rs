@@ -2,8 +2,6 @@ use std::{io, fmt};
 use std::path::PathBuf;
 use std::error::Error;
 
-use yansi::Paint;
-
 use super::Environment;
 use self::ConfigError::*;
 
@@ -57,56 +55,51 @@ impl ConfigError {
     pub fn pretty_print(&self) {
         let valid_envs = Environment::VALID;
         match *self {
-            NotFound => error!("config file was not found"),
-            IoError => error!("failed reading the config file: IO error"),
+            NotFound => warn!("config file was not found"),
+            IoError => warn!("failed reading the config file: IO error"),
             Io(ref error, param) => {
-                error!("I/O error while setting {}:", Paint::default(param).bold());
+                warn!("I/O error while setting {}:", param);
                 info_!("{}", error);
             }
             BadFilePath(ref path, reason) => {
-                error!("configuration file path {} is invalid", Paint::default(path.display()).bold());
+                warn!("configuration file path {} is invalid", path.display());
                 info_!("{}", reason);
             }
             BadEntry(ref name, ref filename) => {
                 let valid_entries = format!("{}, global", valid_envs);
-                error!("{} is not a known configuration environment",
-                       Paint::default(format!("[{}]", name)).bold());
-                info_!("in {}", Paint::default(filename.display()).bold());
-                info_!("valid environments are: {}", Paint::default(valid_entries).bold());
+                warn!("[{}] is not a known configuration environment", name);
+                info_!("in {}", filename.display());
+                info_!("valid environments are: {}", valid_entries);
             }
             BadEnv(ref name) => {
-                error!("{} is not a valid ROCKET_ENV value", Paint::default(name).bold());
-                info_!("valid environments are: {}", Paint::default(valid_envs).bold());
+                warn!("{} is not a valid ROCKET_ENV value", name);
+                info_!("valid environments are: {}", valid_envs);
             }
             BadType(ref name, expected, actual, ref filename) => {
-                error!("{} key could not be parsed", Paint::default(name).bold());
+                warn!("{} key could not be parsed", name);
                 if let Some(filename) = filename {
-                    info_!("in {}", Paint::default(filename.display()).bold());
+                    info_!("in {}", filename.display());
                 }
 
-                info_!("expected value to be {}, but found {}",
-                       Paint::default(expected).bold(), Paint::default(actual).bold());
+                info_!("expected value to be {}, but found {}", expected, actual);
             }
             ParseError(_, ref filename, ref desc, line_col) => {
-                error!("config file failed to parse due to invalid TOML");
+                warn!("config file failed to parse due to invalid TOML");
                 info_!("{}", desc);
-                info_!("in {}", Paint::default(filename.display()).bold());
+                info_!("in {}", filename.display());
                 if let Some((line, col)) = line_col {
-                    info_!("at line {}, column {}",
-                           Paint::default(line + 1).bold(), Paint::default(col + 1).bold());
+                    info_!("at line {}, column {}", line + 1, col + 1);
                 }
             }
             BadEnvVal(ref key, ref value, ref error) => {
-                error!("environment variable {} could not be parsed",
-                   Paint::default(format!("ROCKET_{}={}", key.to_uppercase(), value)).bold());
+                warn!("environment variable ROCKET_{}={} could not be parsed", key.to_uppercase(), value);
                 info_!("{}", error);
             }
             UnknownKey(ref key) => {
-                error!("the configuration key {} is unknown and disallowed in \
-                       this position", Paint::default(key).bold());
+                warn!("the configuration key {} is unknown and disallowed in this position", key);
             }
             Missing(ref key) => {
-                error!("missing configuration key: {}", Paint::default(key).bold());
+                warn!("missing configuration key: {}", key);
             }
         }
     }

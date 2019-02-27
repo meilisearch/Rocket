@@ -274,7 +274,7 @@ impl<'r, R: Responder<'r>> Responder<'r> for Option<R> {
 impl<'r, R: Responder<'r>, E: fmt::Debug> Responder<'r> for Result<R, E> {
     default fn respond_to(self, req: &Request) -> response::Result<'r> {
         self.map(|r| r.respond_to(req)).unwrap_or_else(|e| {
-            error_!("Response was a non-`Responder` `Err`: {:?}.", e);
+            warn!("Response was a non-`Responder` `Err`: {:?}.", e);
             Err(Status::InternalServerError)
         })
     }
@@ -316,7 +316,7 @@ impl<'r> Responder<'r> for Status {
                 Response::build().status(self).ok()
             }
             _ => {
-                error_!("Invalid status used as responder: {}.", self);
+                warn!("Invalid status used as responder: {}.", self);
                 warn_!("Fowarding to 500 (Internal Server Error) catcher.");
                 Err(Status::InternalServerError)
             }

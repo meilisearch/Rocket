@@ -19,7 +19,7 @@ impl Engine for Tera {
 
         // Finally try to tell Tera about all of the templates.
         if let Err(e) = tera.add_template_files(tera_templates) {
-            error!("Failed to initialize Tera templating.");
+            warn!("Failed to initialize Tera templating.");
             for error in e.iter() {
                 info_!("{}", error);
             }
@@ -32,16 +32,16 @@ impl Engine for Tera {
 
     fn render<C: Serialize>(&self, name: &str, context: C) -> Option<String> {
         if self.get_template(name).is_err() {
-            error_!("Tera template '{}' does not exist.", name);
+            warn!("Tera template '{}' does not exist.", name);
             return None;
         };
 
         match Tera::render(self, name, &context) {
             Ok(string) => Some(string),
             Err(e) => {
-                error_!("Error rendering Tera template '{}'.", name);
+                warn!("Error rendering Tera template '{}'.", name);
                 for error in e.iter() {
-                    error_!("{}", error);
+                    warn!("{}", error);
                 }
 
                 None

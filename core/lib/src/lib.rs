@@ -104,7 +104,6 @@
 extern crate rocket_http;
 #[macro_use] extern crate log;
 #[macro_use] extern crate pear;
-extern crate yansi;
 extern crate toml;
 extern crate num_cpus;
 extern crate state;

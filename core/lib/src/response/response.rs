@@ -66,7 +66,7 @@ impl<T: io::Read> Body<T> {
         let mut vec = Vec::new();
         let mut body = self.into_inner();
         if let Err(e) = body.read_to_end(&mut vec) {
-            error_!("Error reading body: {:?}", e);
+            warn!("Error reading body: {:?}", e);
             return None;
         }
 
@@ -80,7 +80,7 @@ impl<T: io::Read> Body<T> {
             .and_then(|bytes| match String::from_utf8(bytes) {
                 Ok(string) => Some(string),
                 Err(e) => {
-                    error_!("Body is invalid UTF-8: {}", e);
+                    warn!("Body is invalid UTF-8: {}", e);
                     None
                 }
             })

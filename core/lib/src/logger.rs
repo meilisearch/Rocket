@@ -1,12 +1,11 @@
 //! Rocket's logging infrastructure.
 
-use std::{fmt, env};
+use std::fmt;
 use std::str::FromStr;
 
 use log;
-use yansi::Paint;
 
-crate const COLORS_ENV: &str = "ROCKET_CLI_COLORS";
+// crate const COLORS_ENV: &str = "ROCKET_CLI_COLORS";
 
 struct RocketLogger(LoggingLevel);
 
@@ -108,33 +107,23 @@ impl log::Log for RocketLogger {
         let is_launch = record.target().starts_with("launch");
         if record.target().ends_with('_') {
             if configged_level != LoggingLevel::Critical || is_launch {
-                print!("    {} ", Paint::default("=>").bold());
+                print!("    =>");
             }
         }
 
         match record.level() {
-            log::Level::Info => println!("{}", Paint::blue(record.args()).wrap()),
-            log::Level::Trace => println!("{}", Paint::magenta(record.args()).wrap()),
-            log::Level::Error => {
-                println!("{} {}",
-                         Paint::red("Error:").bold(),
-                         Paint::red(record.args()).wrap())
-            }
-            log::Level::Warn => {
-                println!("{} {}",
-                         Paint::yellow("Warning:").bold(),
-                         Paint::yellow(record.args()).wrap())
-            }
+            log::Level::Info => println!("Info: {}", record.args()),
+            log::Level::Trace => println!("Trace: {}", record.args()),
+            log::Level::Error => println!("Error: {}", record.args()),
+            log::Level::Warn => println!("Warning: {}", record.args()),
             log::Level::Debug => {
-                print!("\n{} ", Paint::blue("-->").bold());
+                print!("\n-->");
                 if let Some(file) = record.file() {
-                    print!("{}", Paint::blue(file));
+                    print!("{}", file);
                 }
-
                 if let Some(line) = record.line() {
-                    println!(":{}", Paint::blue(line));
+                    println!(":{}", line);
                 }
-
                 println!("{}", record.args());
             }
         }
@@ -148,13 +137,6 @@ impl log::Log for RocketLogger {
 crate fn try_init(level: LoggingLevel, verbose: bool) -> bool {
     if level == LoggingLevel::Off {
         return false;
-    }
-
-    if !::isatty::stdout_isatty()
-        || (cfg!(windows) && !Paint::enable_windows_ascii())
-        || env::var_os(COLORS_ENV).map(|v| v == "0" || v == "off").unwrap_or(false)
-    {
-        Paint::disable();
     }
 
     push_max_level(level);

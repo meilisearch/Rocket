@@ -3,8 +3,6 @@
 use std::{io, fmt};
 use std::sync::atomic::{Ordering, AtomicBool};
 
-use yansi::Paint;
-
 use http::hyper;
 use router::Route;
 
@@ -198,7 +196,7 @@ impl Drop for LaunchError {
             LaunchErrorKind::Collision(ref collisions) => {
                 error!("Rocket failed to launch due to the following routing collisions:");
                 for &(ref a, ref b) in collisions {
-                    info_!("{} {} {}", a, Paint::red("collides with").italic(), b)
+                    info_!("{} collides with {}", a, b)
                 }
 
                 info_!("Note: Collisions can usually be resolved by ranking routes.");
