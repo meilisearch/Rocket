@@ -116,7 +116,7 @@ impl Rocket {
     #[inline]
     fn issue_response(&self, response: Response, hyp_res: hyper::FreshResponse) {
         match self.write_response(response, hyp_res) {
-            Ok(_) => info_!("Response succeeded."),
+            Ok(_) => debug_!("Response succeeded."),
             Err(e) => warn!("Failed to write response: {:?}.", e),
         }
     }
@@ -289,7 +289,7 @@ impl Rocket {
 
             // Check if the request processing completed or if the request needs
             // to be forwarded. If it does, continue the loop to try again.
-            info_!("Outcome: {}", outcome);
+            debug_!("Outcome: {}", outcome);
             match outcome {
                 o@Outcome::Success(_) | o@Outcome::Failure(_) => return o,
                 Outcome::Forward(unused_data) => data = unused_data,
